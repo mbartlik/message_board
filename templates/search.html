@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% block title %}Search{% endblock %}
+
+<div style="margin-top: 10px; display:block">
+	<form method='post'>
+		<span><input placeholder="Topic Name" name="search_item" value="{{ request.form['search_item'] }}"></input></span>
+		<span><input type="submit" value="Submit"></span>
+	</form>
+</div>
+
+{% for topic in topics %}
+	<hr>
+	<a href="{{ url_for('topic', topic_id=topic[0]) }}">
+		<span>{{ topic[1] }}</span>
+	</a>
+{% endfor %}
+<hr>
+
+
+{% endblock %}

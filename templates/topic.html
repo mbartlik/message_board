@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>{% block title %} {{ topic[1] }} {% endblock %}<h1>
+<h5>{{ topic[2] }}</h5>
+<a href="{{ url_for('edit',topic_id=topic[0]) }}"><span>Edit</span></a>
+<hr>
+
+<form method='post'>
+	<input type="text" name="new_post" placeholder='New Post' value="{{ request.form['new_post'] }}"></input>
+	<input type="submit" value="Submit">
+</form>
+
+<hr>
+{% for i in range(posts|length) %}
+	<div style="color:blue; float:right; font-size:10px">{{ dates[i] }}</div>
+	<p>{{ posts[i][1] }}</p>
+	<hr>
+{% endfor %}
+
+{% if load_more %}
+<a href="{{ url_for('topic', topic_id=topic[0], num_posts=num_posts+10) }}">Load more</a>
+{% endif %}
+
+
+
+{% endblock %}

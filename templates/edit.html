@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>{% block title %}Edit "{{ topic[1] }}" Details{% endblock %}</h1>
+
+<form method='post'>
+	<hr>
+	<div><b>Name</b></div>
+	<div><input name='topic_name' value='{{ topic[1] }}'></input></div>
+	<hr>
+	<div><b>Description</b></div>
+	<div><textarea rows='8' cols='50' name='topic_description' value='{{ topic[2] }}'>{{ topic[2] }}</textarea></div>
+	<hr>
+	<div><button type="submit" value="Submit">Submit</button>
+</form>
+
+<hr>
+
+<form method='post' action="{{ url_for('delete',topic_id=topic[0]) }}">
+	<input type="submit" value="Delete Topic"
+            class="btn btn-danger btn-sm"
+            onclick="return confirm('Are you sure you want to delete this topic?')">
+</form>
+
+{% endblock %}

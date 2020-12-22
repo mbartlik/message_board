@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>{% block title %} Create New Topic {% endblock %}</h1>
+
+<form method='post'>
+	<div><input placeholder='Topic Name' name='topic_name' value="{{ request.form['topic_name'] }}"></input></div>
+	<hr>
+
+	<div><textarea rows='8' cols='50' placeholder='Topic Description' name='topic_description'>{{ request.form['topic_description'] }}</textarea></div>
+	<input type='submit' value='Submit'>
+</form>
+
+{% endblock %}
