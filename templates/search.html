@@ -13,7 +13,7 @@
 
 {% for topic in topics %}
 	<hr>
-	<a href="{{ url_for('topic', topic_id=topic[0]) }}">
+	<a href="{{ url_for('topic', topic_id=topic[0], num_posts=10) }}">
 		<span>{{ topic[1] }}</span>
 	</a>
 {% endfor %}

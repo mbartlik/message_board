@@ -8,17 +8,18 @@ ROOT = path.dirname(path.relpath(__file__)) # gets the location on computer of t
 # Returns a python list of lists, where each sublist has the attriubtes of one topic
 def get_topics():
 
-	conn = sql.connect(path.join(ROOT,'topic_database.db'))
+	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
 	cur = conn.cursor()
 	cur.execute('SELECT * FROM topics')
 	topics = cur.fetchall()
+	conn.close()
 	return topics
 
 # Function to create a new topic and insert into the database
 # Input is the topic name and description
 def create_topic(name, description):
 
-	conn = sql.connect(path.join(ROOT,'topic_database.db'))
+	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
 	cur = conn.cursor()
 
 	topics = get_topics()
@@ -36,10 +37,11 @@ def create_topic(name, description):
 
 # Function to fetch all the posts within a topic
 def get_posts_in_topic(topic_id, num_posts):
-	conn = sql.connect(path.join(ROOT,'posts_database.db'))
+	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
 	cur = conn.cursor()
 	cur.execute('SELECT * FROM posts WHERE topic=(?) ORDER BY id DESC LIMIT (?)', (topic_id,num_posts))
 	posts_in_topic = cur.fetchall()
+	conn.close()
 
 	return posts_in_topic
 
@@ -47,8 +49,9 @@ def get_posts_in_topic(topic_id, num_posts):
 def add_post(post,topic_id):
 
 	# connect to the database and insert a new post using the given parameters
-	conn = sql.connect(path.join(ROOT,'posts_database.db'))
+	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
 	cur = conn.cursor()
+
 	cur.execute('INSERT into posts (content, topic) values(?,?)', (post,topic_id))
 
 	conn.commit()
@@ -56,15 +59,17 @@ def add_post(post,topic_id):
 
 # Function to return a single topic
 def get_topic(topic_id):
-	conn = sql.connect(path.join(ROOT,'topic_database.db'))
+	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
 	cur = conn.cursor()
 	cur.execute('SELECT * FROM topics WHERE id=(?)',(topic_id,))
+	topic = cur.fetchone()
+	conn.close()
 
-	return cur.fetchone()
+	return topic
 
 # Function to edit a topic
 def edit_topic(topic_id, name, description):
-	conn = sql.connect(path.join(ROOT,'topic_database.db'))
+	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
 	cur = conn.cursor()
 	cur.execute('UPDATE topics SET name=(?), description=(?) WHERE id=(?)',(name,description,topic_id))
 
@@ -73,12 +78,12 @@ def edit_topic(topic_id, name, description):
 
 # Function to delete a topic
 def delete_topic(topic_id):
-	conn = sql.connect(path.join(ROOT,'topic_database.db'))
+	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
 	cur = conn.cursor()
 	cur.execute('DELETE FROM topics WHERE id=(?)', (topic_id,))
 
 	# must also delete all posts associated with this topic
-	post_conn = sql.connect(path.join(ROOT,'posts_database.db'))
+	post_conn = sql.connect(path.join(ROOT,'tmp/master.db'))
 	cur = post_conn.cursor()
 	cur.execute('DELETE FROM posts WHERE topic=(?)', (topic_id,))
 
@@ -91,10 +96,11 @@ def delete_topic(topic_id):
 def search_for(search_item):
 
 	# get the topics from the database
-	conn = sql.connect(path.join(ROOT,'topic_database.db'))
+	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
 	cur = conn.cursor()
 	cur.execute('SELECT * FROM topics')
 	topics = cur.fetchall()
+	conn.close()
 
 	split_search_item = search_item.lower().split() # split the search term
 
@@ -132,16 +138,20 @@ def search_for(search_item):
 def order_trending_topics():
 
 	# get all posts from the database
-	conn = sql.connect(path.join(ROOT,'posts_database.db'))
+	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
 	cur = conn.cursor()
 	cur.execute('SELECT * FROM posts')
 	posts = cur.fetchall()
+	conn.close()
 
 	# find maximum index of a topic
-	conn = sql.connect(path.join(ROOT,'topic_database.db'))
+	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
 	cur = conn.cursor()
 	cur.execute('SELECT MAX(id) FROM topics')
 	max_index = cur.fetchone()[0]
+
+	if not max_index:
+		return []
 
 	# every index of this array will correlate to how much the topic of that id is trending
 	# the higher the value the more it is trending
@@ -170,11 +180,13 @@ def order_trending_topics():
 
 	print(topic_trends)
 
+	print(max_index)
+
 	# for 20 iterations add the topic with the highest trend to the result
 	highest_trend = 0
 	res = []
 	for i in range(20):
-		for j in range(1,max_index):
+		for j in range(1,max_index+1):
 			if topic_trends[j] > topic_trends[highest_trend]:
 				highest_trend = j
 
@@ -189,13 +201,20 @@ def order_trending_topics():
 		# set the trend index to zero for this topic so it is not added again
 		topic_trends[highest_trend] = -1
 
+		print(topic_trends)
+
+	conn.close()
+
 	return res
 
 def recent_topics(topic_count):
-	conn = sql.connect(path.join(ROOT,'topic_database.db'))
+	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
 	cur = conn.cursor()
 	cur.execute('SELECT * FROM topics ORDER BY id DESC LIMIT (?)',(topic_count,))
-	return cur.fetchall()
+	recent_topics = cur.fetchall()
+	conn.close()
+
+	return recent_topics
 
 
 
