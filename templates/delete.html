@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+	<h1>{% block title %}Delete{% endblock %}</h1>
+	
+	<hr>
+
+	<form method='post'>
+		<input name='delete_key' placeholder='Delete Key'></input>
+		<input type="submit" value="Delete Topic"
+            class="btn btn-danger btn-sm"
+            onclick="return confirm('Are you sure you want to delete this topic?')">
+	</form>
+
+{% endblock %}

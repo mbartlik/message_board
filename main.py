@@ -13,23 +13,19 @@ def index():
 	trending_topics = order_trending_topics() # these are the highest trending topics
 	recently_created_topics = recent_topics(5) # recently created topics
 
-	print(type(trending_topics))
-	print(type(recently_created_topics))
-
-	# remove topic if it is new and trending
+	# remove topic if it is new and trending so it doesn't appear twice
 	for topic in trending_topics:
 		if topic in recently_created_topics:
 			recently_created_topics.remove(topic)
 
 	topics = trending_topics + recently_created_topics
 
-
 	# render template with topics as input
 	return render_template('index.html', topics=topics)
 
+# Route that displays the forum for a certain topic
 @app.route('/<int:topic_id>', methods=['GET','POST'])
 def topic(topic_id):
-
 	# get the number of posts to be loaded
 	num_posts = request.args.get('num_posts')
 	if type(num_posts) != None:
@@ -37,7 +33,8 @@ def topic(topic_id):
 	else:
 		num_posts = 10
 
-	if request.method == 'POST': # a new post is being made
+	# a new post is being made
+	if request.method == 'POST': 
 		post = request.form['new_post']
 		if not post:
 			flash('Need to enter a value for your post')
@@ -53,15 +50,12 @@ def topic(topic_id):
 	if(len(posts_in_topic) < num_posts): # there are no more posts to be loaded
 		load_more=False
 
-
 	# store the datetimes from the timestamps
 	dates = []
-	date_format = '%Y-%m-%d %H:%M:%S' # format of a sql timestamp, used to convert timestamp to python datetime
 	for post in posts_in_topic:
 		this_datetime = post[2]
 		timezone_diff = timedelta(hours=-5)
 		this_datetime = this_datetime + timezone_diff
-		res_datetime = this_datetime.strftime("%m/%d/%Y, %H:%M")
 		dates.append(this_datetime)
 
 	return render_template('topic.html', topic=this_topic, posts=posts_in_topic, dates=dates, num_posts=num_posts,load_more=load_more)
@@ -97,7 +91,8 @@ def about():
 @app.route('/edit/<int:topic_id>', methods=['GET','POST'])
 def edit(topic_id):
 
-	if request.method == 'POST': # the topic details are being edited
+	# topic details edit has been submitted
+	if request.method == 'POST': 
 		topic_name = request.form['topic_name']
 		topic_description = request.form['topic_description']
 		edit_topic(topic_id, topic_name, topic_description)
@@ -107,17 +102,25 @@ def edit(topic_id):
 	this_topic = get_topic(topic_id)
 	return render_template('edit.html',topic=this_topic)
 
-# Redirect meant to delete a topic of a certain id
-@app.route('/delete/<int:topic_id>', methods=['POST'])
+# Redirect to delete a topic of a certain id
+@app.route('/delete/<int:topic_id>', methods=['GET','POST'])
 def delete(topic_id):
-	delete_topic(topic_id)
-	return redirect(url_for('index'))
+	
+	# if method is post then the delete has been submitted
+	if request.method == 'POST':
+		if request.form['delete_key'] == 'gbrhteg':
+			delete_topic(topic_id)
+			return redirect(url_for('index'))
+		else:
+			flash('Invalid delete key')
+	
+	return render_template('delete.html', topic_id=topic_id)
 
 # Page to search a topic
 @app.route('/search', methods=['GET','POST'])
 def search():
-
-	if request.method == 'POST': # A search is in progress
+	# A search is in progress
+	if request.method == 'POST': 
 		matching_topics = search_for(request.form['search_item'])
 		return render_template('search.html',topics=matching_topics)
 
@@ -136,7 +139,3 @@ def server_error(error):
 
 if __name__ == '__main__':
 	app.run(debug=True)
-
-
-
-# example date '2020-12-11 19:30:00'

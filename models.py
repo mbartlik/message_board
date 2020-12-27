@@ -6,21 +6,13 @@ from datetime import datetime, timedelta
 
 ROOT = path.dirname(path.relpath(__file__)) # gets the location on computer of this directory
 
-#db_user = os.environ.get('CLOUD_SQL_USERNAME')
-#db_password = os.environ.get('CLOUD_SQL_PASSWORD')
-#db_name = os.environ.get('CLOUD_SQL_DATABASE_NAME')
-#db_connection_name = os.environ.get('CLOUD_SQL_CONNECTION_NAME')
 db_user = 'max'
 db_password = 'window'
 db_name = 'master'
 db_connection_name = 'maxs-message-board:us-east1:messageboard-data'
 
+# Establishes connection with Google Cloud SQL database
 def get_connection():
-
-	print(db_user)
-	print(db_password)
-	print(db_name)
-	print(db_connection_name)
 	# when deployed to app engine the 'GAE_ENV' variable will be set to 'standard'
 	if os.environ.get('GAE_ENV') == 'standard':
 		# use the local socket interface for accessing Cloud SQL
@@ -37,7 +29,6 @@ def get_connection():
 # Function to fetch all of the topics in the database
 # Returns a python list of lists, where each sublist has the attriubtes of one topic
 def get_topics():
-
 	conn = get_connection()
 	cur = conn.cursor()
 	cur.execute('SELECT * FROM topics')
@@ -48,7 +39,6 @@ def get_topics():
 # Function to create a new topic and insert into the database
 # Input is the topic name and description
 def create_topic(name, description):
-
 	conn = get_connection()
 	cur = conn.cursor()
 
@@ -75,10 +65,8 @@ def get_posts_in_topic(topic_id, num_posts):
 
 	return posts_in_topic
 
-# Function to add post to a topic
+# Function to add post to a topic given a string for the post itself and a topic id
 def add_post(post,topic_id):
-
-	# connect to the database and insert a new post using the given parameters
 	conn = get_connection()
 	cur = conn.cursor()
 
@@ -110,17 +98,15 @@ def edit_topic(topic_id, name, description):
 def delete_topic(topic_id):
 	conn = get_connection()
 	cur = conn.cursor()
+
+	# must delete all posts associated with this topic as well as the topics
+	cur.execute('DELETE FROM posts WHERE topic=%s', (topic_id,))
 	cur.execute('DELETE FROM topics WHERE id=%s', (topic_id,))
 
-	# must also delete all posts associated with this topic
-	post_conn = sql.connect(path.join(ROOT,'tmp/master.db'))
-	cur = post_conn.cursor()
-	cur.execute('DELETE FROM posts WHERE topic=%s', (topic_id,))
+	
 
 	conn.commit()
-	post_conn.commit()
 	conn.close()
-	post_conn.close()
 
 # Function to search for a topic
 def search_for(search_item):
@@ -203,10 +189,6 @@ def order_trending_topics():
 
 		topic_trends[post[3]] += (24*60*60-time_diff_seconds)/1000
 
-	print(topic_trends)
-
-	print(max_index)
-
 	# for 20 iterations add the topic with the highest trend to the result
 	highest_trend = 0
 	res = []
@@ -226,12 +208,11 @@ def order_trending_topics():
 		# set the trend index to zero for this topic so it is not added again
 		topic_trends[highest_trend] = -1
 
-		print(topic_trends)
-
 	conn.close()
 
 	return res
 
+# Function to get the most recently created topics
 def recent_topics(topic_count):
 	conn = get_connection()
 	cur = conn.cursor()
@@ -244,12 +225,3 @@ def recent_topics(topic_count):
 		res.append(topic)
 
 	return res
-
-
-
-
-
-
-
-
-
