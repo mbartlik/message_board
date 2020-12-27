@@ -1,14 +1,44 @@
 import sqlite3 as sql
+import os
 from os import path
+import pymysql
 from datetime import datetime, timedelta
 
 ROOT = path.dirname(path.relpath(__file__)) # gets the location on computer of this directory
+
+#db_user = os.environ.get('CLOUD_SQL_USERNAME')
+#db_password = os.environ.get('CLOUD_SQL_PASSWORD')
+#db_name = os.environ.get('CLOUD_SQL_DATABASE_NAME')
+#db_connection_name = os.environ.get('CLOUD_SQL_CONNECTION_NAME')
+db_user = 'max'
+db_password = 'window'
+db_name = 'master'
+db_connection_name = 'maxs-message-board:us-east1:messageboard-data'
+
+def get_connection():
+
+	print(db_user)
+	print(db_password)
+	print(db_name)
+	print(db_connection_name)
+	# when deployed to app engine the 'GAE_ENV' variable will be set to 'standard'
+	if os.environ.get('GAE_ENV') == 'standard':
+		# use the local socket interface for accessing Cloud SQL
+		unix_socket = '/cloudsql/{}'.format(db_connection_name)
+		conn = pymysql.connect(user=db_user, password=db_password, unix_socket=unix_socket, db=db_name)
+	else:
+		# if running locally use the TCP connections instead
+		# set up Cloud SQL proxy (cloud.google.com/sql/docs/mysql/sql-proxy)
+		host = '127.0.0.1'
+		conn = pymysql.connect(user=db_user, password=db_password, host=host, db=db_name)
+
+	return conn
 
 # Function to fetch all of the topics in the database
 # Returns a python list of lists, where each sublist has the attriubtes of one topic
 def get_topics():
 
-	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
+	conn = get_connection()
 	cur = conn.cursor()
 	cur.execute('SELECT * FROM topics')
 	topics = cur.fetchall()
@@ -19,7 +49,7 @@ def get_topics():
 # Input is the topic name and description
 def create_topic(name, description):
 
-	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
+	conn = get_connection()
 	cur = conn.cursor()
 
 	topics = get_topics()
@@ -30,16 +60,16 @@ def create_topic(name, description):
 			return False
 
 	# insert topic, commit, and close connection
-	cur.execute('INSERT into topics (name, description) values(?,?)', (name,description))
+	cur.execute('INSERT into topics (name, description) values(%s,%s)', (name,description))
 	conn.commit()
 	conn.close()
 	return True
 
 # Function to fetch all the posts within a topic
 def get_posts_in_topic(topic_id, num_posts):
-	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
+	conn = get_connection()
 	cur = conn.cursor()
-	cur.execute('SELECT * FROM posts WHERE topic=(?) ORDER BY id DESC LIMIT (?)', (topic_id,num_posts))
+	cur.execute('SELECT * FROM posts WHERE topic=%s ORDER BY id DESC LIMIT %s', (topic_id,num_posts))
 	posts_in_topic = cur.fetchall()
 	conn.close()
 
@@ -49,19 +79,19 @@ def get_posts_in_topic(topic_id, num_posts):
 def add_post(post,topic_id):
 
 	# connect to the database and insert a new post using the given parameters
-	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
+	conn = get_connection()
 	cur = conn.cursor()
 
-	cur.execute('INSERT into posts (content, topic) values(?,?)', (post,topic_id))
+	cur.execute('INSERT into posts (content, topic) values(%s,%s)', (post,topic_id))
 
 	conn.commit()
 	conn.close()
 
 # Function to return a single topic
 def get_topic(topic_id):
-	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
+	conn = get_connection()
 	cur = conn.cursor()
-	cur.execute('SELECT * FROM topics WHERE id=(?)',(topic_id,))
+	cur.execute('SELECT * FROM topics WHERE id=%s',(topic_id,))
 	topic = cur.fetchone()
 	conn.close()
 
@@ -69,23 +99,23 @@ def get_topic(topic_id):
 
 # Function to edit a topic
 def edit_topic(topic_id, name, description):
-	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
+	conn = get_connection()
 	cur = conn.cursor()
-	cur.execute('UPDATE topics SET name=(?), description=(?) WHERE id=(?)',(name,description,topic_id))
+	cur.execute('UPDATE topics SET name=%s, description=%s WHERE id=%s',(name,description,topic_id))
 
 	conn.commit()
 	conn.close()
 
 # Function to delete a topic
 def delete_topic(topic_id):
-	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
+	conn = get_connection()
 	cur = conn.cursor()
-	cur.execute('DELETE FROM topics WHERE id=(?)', (topic_id,))
+	cur.execute('DELETE FROM topics WHERE id=%s', (topic_id,))
 
 	# must also delete all posts associated with this topic
 	post_conn = sql.connect(path.join(ROOT,'tmp/master.db'))
 	cur = post_conn.cursor()
-	cur.execute('DELETE FROM posts WHERE topic=(?)', (topic_id,))
+	cur.execute('DELETE FROM posts WHERE topic=%s', (topic_id,))
 
 	conn.commit()
 	post_conn.commit()
@@ -96,7 +126,7 @@ def delete_topic(topic_id):
 def search_for(search_item):
 
 	# get the topics from the database
-	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
+	conn = get_connection()
 	cur = conn.cursor()
 	cur.execute('SELECT * FROM topics')
 	topics = cur.fetchall()
@@ -129,7 +159,6 @@ def search_for(search_item):
 		# add the highest matching topic to the results and delete from similarities list
 		results.append(topics[highest_index])
 		del matching_topics_similarity[highest_index]
-		del topics[highest_index]
 
 	return results
 
@@ -138,15 +167,12 @@ def search_for(search_item):
 def order_trending_topics():
 
 	# get all posts from the database
-	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
+	conn = get_connection()
 	cur = conn.cursor()
 	cur.execute('SELECT * FROM posts')
 	posts = cur.fetchall()
-	conn.close()
 
 	# find maximum index of a topic
-	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
-	cur = conn.cursor()
 	cur.execute('SELECT MAX(id) FROM topics')
 	max_index = cur.fetchone()[0]
 
@@ -157,12 +183,11 @@ def order_trending_topics():
 	# the higher the value the more it is trending
 	topic_trends = [0]*(max_index + 1)
 
-	date_format = '%Y-%m-%d %H:%M:%S' # format of a sql timestamp, used to convert timestamp to python datetime
+	date_format = '%Y-%m-%s %H:%M:%S' # format of a sql timestamp, used to convert timestamp to python datetime
 
 	for post in posts:
 
-		timestamp = post[2]
-		post_datetime = datetime.strptime(timestamp, date_format)
+		post_datetime = post[2]
 		
 		timezone_diff = timedelta(hours=+5)
 		current_datetime = datetime.now() + timezone_diff
@@ -195,7 +220,7 @@ def order_trending_topics():
 			break
 
 		# add the highest trending topic
-		cur.execute('SELECT * FROM topics WHERE id=(?)', (highest_trend,))
+		cur.execute('SELECT * FROM topics WHERE id=%s', (highest_trend,))
 		res.append(cur.fetchone())
 
 		# set the trend index to zero for this topic so it is not added again
@@ -208,13 +233,17 @@ def order_trending_topics():
 	return res
 
 def recent_topics(topic_count):
-	conn = sql.connect(path.join(ROOT,'tmp/master.db'))
+	conn = get_connection()
 	cur = conn.cursor()
-	cur.execute('SELECT * FROM topics ORDER BY id DESC LIMIT (?)',(topic_count,))
+	cur.execute('SELECT * FROM topics ORDER BY id DESC LIMIT %s',(topic_count,))
 	recent_topics = cur.fetchall()
 	conn.close()
 
-	return recent_topics
+	res=[]
+	for topic in recent_topics:
+		res.append(topic)
+
+	return res
 
 
 

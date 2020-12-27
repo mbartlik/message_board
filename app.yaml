@@ -1,1 +1,7 @@
 runtime: python38
+
+env_variables:
+  CLOUD_SQL_USERNAME: max
+  CLOUD_SQL_PASSWORD: window
+  CLOUD_SQL_DATABASE_NAME: master
+  CLOUD_SQL_CONNECTION_NAME: maxs-message-board:us-east1:messageboard-data

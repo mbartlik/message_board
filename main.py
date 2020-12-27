@@ -10,15 +10,14 @@ app.config['SECRET_KEY'] = 'UBIBPNIOEFIWEWRF'
 @app.route('/', methods=['GET','POST'])
 def index():
 
-	print("loading index")
-
 	trending_topics = order_trending_topics() # these are the highest trending topics
 	recently_created_topics = recent_topics(5) # recently created topics
 
-	# remove topic if it is new and trending
+	print(type(trending_topics))
+	print(type(recently_created_topics))
 
+	# remove topic if it is new and trending
 	for topic in trending_topics:
-		print(topic)
 		if topic in recently_created_topics:
 			recently_created_topics.remove(topic)
 
@@ -59,7 +58,7 @@ def topic(topic_id):
 	dates = []
 	date_format = '%Y-%m-%d %H:%M:%S' # format of a sql timestamp, used to convert timestamp to python datetime
 	for post in posts_in_topic:
-		this_datetime = datetime.strptime(post[2], date_format)
+		this_datetime = post[2]
 		timezone_diff = timedelta(hours=-5)
 		this_datetime = this_datetime + timezone_diff
 		res_datetime = this_datetime.strftime("%m/%d/%Y, %H:%M")
@@ -80,8 +79,11 @@ def create_topic_page():
 		elif not topic_description:
 			flash('Topic description required!')
 		else: # else add the new topic to the database and redirect home
-			create_topic(topic_name, topic_description)
-			return redirect(url_for('index'))
+			addable = create_topic(topic_name, topic_description)
+			if addable:
+				return redirect(url_for('index'))
+			else:
+				flash('Topic name already taken!')
 
 	# the create topic page will be rendered if not the post method
 	return render_template('create_topic.html')
