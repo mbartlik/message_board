@@ -126,6 +126,25 @@ def search():
 
 	return render_template('search.html',topics=[])
 
+# Page to show all topics A-Z
+@app.route('/all_topics')
+def all_topics():
+	topics = get_topics()
+	res = []
+	topic_num = len(topics)
+
+	# sort using insertion sort for alphabetical order
+	for i in range(topic_num):
+		first_alphabetical = 0
+		for j in range(len(topics)):
+			if topics[j][1] < topics[first_alphabetical][1]:
+				first_alphabetical = j
+
+		res.append(topics[first_alphabetical])
+		del topics[first_alphabetical]
+
+	return render_template('all_topics.html',topics=res)
+
 
 @app.errorhandler(404)
 def not_found_error(error):

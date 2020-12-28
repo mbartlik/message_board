@@ -34,7 +34,13 @@ def get_topics():
 	cur.execute('SELECT * FROM topics')
 	topics = cur.fetchall()
 	conn.close()
-	return topics
+
+	# convert tuple of tuples to list of tuples
+	res = []
+	for topic in topics:
+		res.append(topic)
+
+	return res
 
 # Function to create a new topic and insert into the database
 # Input is the topic name and description
