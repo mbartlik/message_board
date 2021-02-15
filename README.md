@@ -3,6 +3,3 @@ This web application is an anonymous forum where users can pick a certain topic 
 
 ## Build
 This web application is run on the Google App Engine and is built on a Flask framework. The databases are managed in Google Cloud SQL and can be queried and updated from user actions. 
-
-## Link
-[Max's Message Board](https://maxs-message-board.ue.r.appspot.com)
